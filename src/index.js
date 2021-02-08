@@ -64,7 +64,7 @@ class Publisher {
             https.get(`${this.nugetSource}/v3-flatcontainer/${packageName}/index.json`, res => {
 
                 if (res.statusCode === 404) {
-                    return false
+                    resolve(false)
                 }
 
                 let body = "";
@@ -118,7 +118,9 @@ class Publisher {
 
         // determine which project(s) need published
         for await (const pf of this.projectFiles){
-            if (!(await this._getVersionExists(pf))) {
+            let exists = await this._getVersionExists(pf)
+            console.log(`${pf} of same version exists on remote ${exists}`)
+            if (!exists) {
                 this.requiresPublishing.push(pf)
             }
         }
