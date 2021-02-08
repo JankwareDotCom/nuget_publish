@@ -100,15 +100,20 @@ class Publisher {
 
         // get projectFileVersions
         this.projectFiles.forEach(pf => {
-            const projectFileContents = fs.readFileSync(pf, "utf-8")
+            fs.readFile(pf, "utf-8",(err, data) => {
+                if (err) {
+                    this._printErrorAndBail(err.message)
+                }
 
-            let m;
-            if ((m = this.versionRegex.exec(projectFileContents)) !== null) {
-                this.projectVersions[pf] = m[0]
-                console.log(`Found version ${m[0]} for '${pf}'`)
-            } else {
-                this._printErrorAndBail(`unable to determine version for '${pf}'`)
-            }
+                let m;
+                if ((m = this.versionRegex.exec(data)) !== null) {
+                    this.projectVersions[pf] = m[0]
+                    console.log(`Found version ${m[0]} for '${pf}'`)
+                } else {
+                    console.log(data)
+                    this._printErrorAndBail(`unable to determine version for '${pf}' using regex ${this.versionRegex.toString()}`)
+                }
+            })
         })
 
         // determine which project(s) need published
