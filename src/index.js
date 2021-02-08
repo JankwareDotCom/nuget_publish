@@ -169,11 +169,11 @@ class Publisher {
 
     async run() {
         await this.ensureFormat()
-                .then(async () => await this.ensureExists())
-                .then(async () => await this.getFileVersions())
-                .then(async () => await this.determineIfPublishingIsNeeded())
-                .then(async () => await this.startBuilding())
-                .then(async () => await this.pushToServer())
+                .then(async () => await this.ensureExists()
+                    .then(async () => await this.getFileVersions()
+                        .then(async () => await this.determineIfPublishingIsNeeded()
+                            .then(async () => await this.startBuilding()
+                                .then(async () => await this.pushToServer())))))
     }
 }
 
