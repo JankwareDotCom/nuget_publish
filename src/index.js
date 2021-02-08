@@ -118,7 +118,7 @@ class Publisher {
 
         // determine which project(s) need published
         this.projectFiles.forEach(pf => {
-            if (!this._getVersionExists()) {
+            if (!this._getVersionExists(pf)) {
                 this.requiresPublishing.append(pf)
             }
         })
