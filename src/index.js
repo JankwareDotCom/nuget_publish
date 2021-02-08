@@ -168,17 +168,12 @@ class Publisher {
     }
 
     async run() {
-        await this
-            .ensureFormat()
-            .then(this.ensureExists
-                .then(this.getFileVersions
-                    .then(this.determineIfPublishingIsNeeded()
-                        .then(this.startBuilding
-                            .then(this.pushToServer)
-                        )
-                    )
-                )
-            )
+        await this.ensureFormat()
+                .then(async () => await this.ensureExists())
+                .then(async () => await this.getFileVersions())
+                .then(async () => await this.determineIfPublishingIsNeeded())
+                .then(async () => await this.startBuilding())
+                .then(async () => await this.pushToServer())
     }
 }
 
