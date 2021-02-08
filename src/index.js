@@ -15,7 +15,7 @@ class Publisher {
             ? " -n 1 "
             : ""
         this.projectFiles = process.env.INPUT_PROJECT_FILE_PATHS.split(`,`)
-        this.versionRegex = new RegExp(process.env.INPUT_VERSION_REGEX || '^\s*<Version>(.*)<\/Version>\s*$')
+        this.versionRegex = new RegExp(process.env.INPUT_VERSION_REGEX || '^\s*<Version>(.*)<\/Version>\s*$','gim')
         this.projectVersions = {}
         this.requiresPublishing = []
     }
