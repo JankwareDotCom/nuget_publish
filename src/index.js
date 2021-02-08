@@ -58,7 +58,7 @@ class Publisher {
 
 
     _getVersionExists(projectFilePath) {
-        const packageName = this._getPackageName(projectFilePath);
+        const packageName = this._getPackageName(projectFilePath)
         const thisVersion = this.projectVersions[projectFilePath]
 
         https.get(`${this.nugetSource}/v3-flatcontainer/${packageName}/index.json`, res => {
@@ -77,7 +77,9 @@ class Publisher {
                 })
             }
 
-            this._printErrorAndBail(`unable to determine remote version for '${packageName}'`)
+            this._printErrorAndBail(`unable to determine remote version for '${packageName}'
+            status: ${res.statusCode}
+            message: ${res.statusMessage}`)
         }).on("error", err =>{
             this._printErrorAndBail(`unable to determine remote version for '${packageName}': ${err.message}`)
         })
