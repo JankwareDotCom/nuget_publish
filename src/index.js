@@ -101,12 +101,13 @@ class Publisher {
                     this._printErrorAndBail(err.message)
                 }
 
-                let m;
-                if ((m = this.versionRegex.exec(data)) !== null) {
+                const m = this.versionRegex.exec(data)
+                if (m !== null) {
                     this.projectVersions[pf] = m[1]
                     console.log(`Found version ${m[1]} for '${pf}'`)
                 } else {
                     console.log(data)
+                    console.log(m)
                     this._printErrorAndBail(`unable to determine version for '${pf}' using regex ${this.versionRegex.toString()}`)
                 }
             })
