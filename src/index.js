@@ -148,7 +148,7 @@ class Publisher {
 
         console.log(`🚀 Sending packages... (${packages.join(", ")})`)
 
-        const pushCommand = `dotnet nuget push *.nupkg -s ${this.nugetSource}/v3/index.json -k ${this.nugetKey} --skipDuplicate${this.publishSymbolsString}`
+        const pushCommand = `dotnet nuget push *.nupkg -s ${this.nugetSource}/v3/index.json -k ${this.nugetKey} --skip-duplicate${this.publishSymbolsString}`
         const pushResults = this._runCommand(pushCommand, {encoding: "utf-8"}).stdout
 
         console.log(pushResults)
