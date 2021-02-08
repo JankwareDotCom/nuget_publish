@@ -86,17 +86,21 @@ class Publisher {
         })
     }
 
-    run() {
+    async ensureFormat(){
         // ensure project file(s) have been passed in correctly
         if (!this.projectFiles || this.projectFiles.length === 0) {
             this._printErrorAndBail(`project files not set or improperly set`)
         }
+    }
 
+    async ensureExists() {
         // ensure project file(s) exist
         this.projectFiles.forEach(pf => {
             this._checkIfProjectExists(pf)
         })
+    }
 
+    async getFileVersions() {
         // get projectFileVersions
         this.projectFiles.forEach(pf => {
             fs.readFile(pf, "utf-8",(err, data) => {
@@ -115,16 +119,9 @@ class Publisher {
                 }
             })
         })
+    }
 
-        // determine which project(s) need published
-        this.projectFiles.forEach(pf => {
-            this._getVersionExists(pf).then(res => {
-                if (!res){
-                    this.requiresPublishing.push(pf)
-                }
-            })
-        })
-
+    async startBuilding() {
         // start build process
         this.requiresPublishing.forEach(pf => {
             const packageName = this._getPackageName(pf)
@@ -143,7 +140,9 @@ class Publisher {
                 this._printErrorAndBail(`error building package ${packageName} version ${packageVersion}: ${err.message}`)
             }
         })
+    }
 
+    async pushToServer(){
         // push to server
         const packages = fs.readdirSync(".")
             .filter(f => f.endsWith("nupkg"));
@@ -159,6 +158,31 @@ class Publisher {
             this._printErrorAndBail(`${/error.*/.exec(pushResults)[0]}`)
         }
     }
+
+    async determineIfPublishingIsNeeded(){
+        // determine which project(s) need published
+        this.projectFiles.forEach(pf => {
+            this._getVersionExists(pf).then((res) => {
+                if (!res){
+                    this.requiresPublishing.push(pf)
+                }
+            })
+        })
+    }
+
+    async run() {
+        await this
+            .ensureFormat()
+            .then(this.ensureExists
+                .then(this.getFileVersions
+                    .then(this.determineIfPublishingIsNeeded()
+                        .then(this.startBuilding
+                            .then(this.pushToServer)
+                        )
+                    )
+                )
+            )
+    }
 }
 
-new Publisher().run()
+new Publisher().run().then(() => console.log('DONE!'))
