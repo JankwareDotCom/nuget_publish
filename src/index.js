@@ -100,8 +100,8 @@ class Publisher {
                 if (err) {
                     this._printErrorAndBail(err.message)
                 }
-
-                const m = this.versionRegex.exec(data)
+                const rgx = new RegExp(this.versionRegex)
+                const m = rgx.exec(data)
                 if (m !== null) {
                     this.projectVersions[pf] = m[1]
                     console.log(`Found version ${m[1]} for '${pf}'`)
