@@ -14,7 +14,7 @@ inputs:
   VERSION_REGEX:
     description: Regex Pattern to extract version from csproj file(s)
     required: false
-    default: a pattern that gets the <Version> tag
+    default: '^\s*<Version>(.*)<\/Version>\s*$'
   INCLUDE_SYMBOLS:
     description: Publish symbols too?
     required: false
