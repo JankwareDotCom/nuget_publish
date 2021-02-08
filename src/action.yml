@@ -1,0 +1,25 @@
+name: publish nuget package(s)
+description: publish nuget packages (csharp)
+
+inputs:
+  PROJECT_FILE_PATHS:
+    description: Filepath(s) to projects to build, publish, push.  CSV
+    required: true
+  INPUT_NUGET_SOURCE:
+    description: Nuget server
+    required: true
+  INPUT_NUGET_KEY:
+    description: Nuget server api key
+    required: true
+  INPUT_VERSION_REGEX:
+    description: Regex Pattern to extract version from csproj file(s)
+    required: false
+    default: a pattern that gets the <Version> tag
+  INCLUDE_SYMBOLS:
+    description: Publish symbols too?
+    required: false
+    default: 'false'
+
+runs:
+  using: node12
+  main: index.js
