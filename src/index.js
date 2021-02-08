@@ -36,11 +36,7 @@ class Publisher {
     }
 
     _getPackageName(projectFilePath) {
-        return path
-            .basename(projectFilePath)
-            .split(`.`)
-            .slice(0,-1)
-            .join(`.`)
+        return path.basename(projectFilePath).split('.').slice(0,-1).join('.')
     }
 
     _runCommand(cmd, options) {
@@ -136,7 +132,7 @@ class Publisher {
                     .forEach(x => fs.unlinkSync(x))
 
                 this._runCommandInProcess(`dotnet build -c Release ${pf}`)
-                this._runCommandInProcess(`dotnet pack${this.buildSymbolsString} --no-build -c Release ${pf} -o`)
+                this._runCommandInProcess(`dotnet pack${this.buildSymbolsString} --no-build -c Release ${pf} -o .`)
             } catch (err) {
                 this._printErrorAndBail(`error building package ${packageName} version ${packageVersion}: ${err.message}`)
             }
