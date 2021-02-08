@@ -62,13 +62,10 @@ class Publisher {
 
         return new Promise((resolve) => {
             https.get(`${this.nugetSource}/v3-flatcontainer/${packageName}/index.json`, res => {
-
+                let body = "";
                 if (res.statusCode === 404) {
                     resolve(false)
-                }
-
-                let body = "";
-                if (res.statusCode === 200) {
+                } else if (res.statusCode === 200) {
                     res.setEncoding("utf-8")
                     res.on("data", chunk => body += chunk)
                     res.on("end", () => {
