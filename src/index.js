@@ -159,4 +159,4 @@ class Publisher {
     }
 }
 
-await new Publisher().run()
+new Publisher().run().then(() => console.log("DONE!"))
