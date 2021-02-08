@@ -15,7 +15,7 @@ class Publisher {
             ? " -n 1 "
             : ""
         this.projectFiles = process.env.INPUT_PROJECT_FILE_PATHS.split(`,`)
-        this.versionRegex = new RegExp(process.env.INPUT_VERSION_REGEX || '^\s*<Version>(.*)<\/Version>\s*$','gim')
+        this.versionRegex = new RegExp(process.env.INPUT_VERSION_REGEX || '^.*<Version>(.*)<\\/Version>.*$','gim')
         this.projectVersions = {}
         this.requiresPublishing = []
     }
@@ -103,8 +103,8 @@ class Publisher {
 
                 let m;
                 if ((m = this.versionRegex.exec(data)) !== null) {
-                    this.projectVersions[pf] = m[0]
-                    console.log(`Found version ${m[0]} for '${pf}'`)
+                    this.projectVersions[pf] = m[1]
+                    console.log(`Found version ${m[1]} for '${pf}'`)
                 } else {
                     console.log(data)
                     this._printErrorAndBail(`unable to determine version for '${pf}' using regex ${this.versionRegex.toString()}`)
