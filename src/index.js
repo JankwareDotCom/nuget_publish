@@ -86,7 +86,7 @@ class Publisher {
         })
     }
 
-    async run() {
+    run() {
         // ensure project file(s) have been passed in correctly
         if (!this.projectFiles || this.projectFiles.length === 0) {
             this._printErrorAndBail(`project files not set or improperly set`)
@@ -117,13 +117,13 @@ class Publisher {
         })
 
         // determine which project(s) need published
-        for await (const pf of this.projectFiles){
-            let exists = await this._getVersionExists(pf)
-            console.log(`${pf} of same version exists on remote ${exists}`)
-            if (!exists) {
-                this.requiresPublishing.push(pf)
-            }
-        }
+        this.projectFiles.forEach(pf => {
+            this._getVersionExists(pf).then(res => {
+                if (!res){
+                    this.requiresPublishing.push(pf)
+                }
+            })
+        })
 
         // start build process
         this.requiresPublishing.forEach(pf => {
@@ -161,4 +161,4 @@ class Publisher {
     }
 }
 
-new Publisher().run().then(() => console.log("DONE!"))
+new Publisher().run()
