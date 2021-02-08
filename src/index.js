@@ -56,36 +56,37 @@ class Publisher {
         })
     }
 
-
     _getVersionExists(projectFilePath) {
         const packageName = this._getPackageName(projectFilePath)
         const thisVersion = this.projectVersions[projectFilePath]
 
-        https.get(`${this.nugetSource}/v3-flatcontainer/${packageName}/index.json`, res => {
+        return new Promise((resolve) => {
+            https.get(`${this.nugetSource}/v3-flatcontainer/${packageName}/index.json`, res => {
 
-            if (res.statusCode === 404) {
-                return false
-            }
+                if (res.statusCode === 404) {
+                    return false
+                }
 
-            let body = "";
-            if (res.statusCode === 200) {
-                res.setEncoding("utf-8")
-                res.on("data", chunk => body += chunk)
-                res.on("end", () => {
-                    const remoteVersions = JSON.parse(body)
-                    return 0 > remoteVersions["versions"].indexOf(thisVersion)
-                })
-            }
-
-            this._printErrorAndBail(`unable to determine remote version for '${packageName}'
-            status: ${res.statusCode}
-            message: ${res.statusMessage}`)
-        }).on("error", err =>{
-            this._printErrorAndBail(`unable to determine remote version for '${packageName}': ${err.message}`)
+                let body = "";
+                if (res.statusCode === 200) {
+                    res.setEncoding("utf-8")
+                    res.on("data", chunk => body += chunk)
+                    res.on("end", () => {
+                        const remoteVersions = JSON.parse(body)
+                        resolve(remoteVersions["versions"].indexOf(thisVersion) > -1)
+                    })
+                } else {
+                    this._printErrorAndBail(`unable to determine remote version for '${packageName}'
+                        status: ${res.statusCode}
+                        message: ${res.statusMessage}`)
+                }
+            }).on("error", err =>{
+                this._printErrorAndBail(`unable to determine remote version for '${packageName}': ${err.message}`)
+            })
         })
     }
 
-    run() {
+    async run() {
         // ensure project file(s) have been passed in correctly
         if (!this.projectFiles || this.projectFiles.length === 0) {
             this._printErrorAndBail(`project files not set or improperly set`)
@@ -116,11 +117,11 @@ class Publisher {
         })
 
         // determine which project(s) need published
-        this.projectFiles.forEach(pf => {
-            if (!this._getVersionExists(pf)) {
+        for await (const pf of this.projectFiles){
+            if (!(await this._getVersionExists(pf))) {
                 this.requiresPublishing.push(pf)
             }
-        })
+        }
 
         // start build process
         this.requiresPublishing.forEach(pf => {
@@ -158,4 +159,4 @@ class Publisher {
     }
 }
 
-new Publisher().run()
+await new Publisher().run()
