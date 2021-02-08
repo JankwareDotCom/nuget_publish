@@ -28,6 +28,9 @@ class Publisher {
     _checkIfProjectExists(projectFilePath){
         if (!fs.existsSync(projectFilePath)){
             console.log(process.cwd())
+            fs.readdirSync(process.cwd()).forEach(file => {
+                console.log(`-> ${file}`);
+            });
             this._printErrorAndBail(`Unable to find project '${projectFilePath}'`)
         }
     }
