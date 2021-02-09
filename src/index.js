@@ -11,7 +11,7 @@ class Publisher {
         this.buildSymbolsString = (process.env.INPUT_INCLUDE_SYMBOLS || "false").toLowerCase() === "true"
             ? " --include-symbols -p:SymbolPackageFormat=snupkg "
             : ""
-        this.publishSymbolsString = (process.env.INPUT_INCLUDE_SYMBOLS || "false").toLowerCase() === "true"
+        this.publishSymbolsString = (process.env.INPUT_INCLUDE_SYMBOLS || "false").toLowerCase() === "false"
             ? " -n 1 "
             : ""
         this.projectFiles = process.env.INPUT_PROJECT_FILE_PATHS.split(`,`)
@@ -120,17 +120,16 @@ class Publisher {
 
     async startBuilding() {
         // start build process
+        fs.readdirSync(".")
+            .filter(f => /\.s?nupkg$/.test(f))
+            .forEach(x => fs.unlinkSync(x))
+
         this.requiresPublishing.forEach(pf => {
             const packageName = this._getPackageName(pf)
             const packageVersion = this.projectVersions[pf];
-
             console.log(`🏭 Starting build process for ${packageName} version ${packageVersion}`)
 
             try{
-                fs.readdirSync(".")
-                    .filter(f => /\.s?nupkg$/.test(f))
-                    .forEach(x => fs.unlinkSync(x))
-
                 this._runCommandInProcess(`dotnet build -c Release ${pf}`)
                 this._runCommandInProcess(`dotnet pack${this.buildSymbolsString} --no-build -c Release ${pf} -o .`)
             } catch (err) {
@@ -146,7 +145,7 @@ class Publisher {
 
         console.log(`🚀 Sending packages... (${packages.join(", ")})`)
 
-        const pushCommand = `dotnet nuget push "**/*.nupkg" -s ${this.nugetSource}/v3/index.json -k ${this.nugetKey} --skip-duplicate${this.publishSymbolsString}`
+        const pushCommand = `dotnet nuget push *.nupkg -s ${this.nugetSource}/v3/index.json -k ${this.nugetKey} --skip-duplicate${this.publishSymbolsString}`
         const pushResults = this._runCommand(pushCommand, {encoding: "utf-8"}).stdout
 
         console.log(pushResults)
@@ -158,23 +157,29 @@ class Publisher {
 
     async determineIfPublishingIsNeeded(){
         // determine which project(s) need published
-        this.projectFiles.forEach(pf => {
-            this._getVersionExists(pf).then((res) => {
+
+        for await (const pf of this.projectFiles) {
+            await this._getVersionExists(pf).then((res) => {
                 if (!res){
                     this.requiresPublishing.push(pf)
                 }
             })
-        })
+        }
+
     }
 
     async run() {
         await this.ensureFormat()
-                .then(async () => await this.ensureExists()
-                    .then(async () => await this.getFileVersions()
-                        .then(async () => await this.determineIfPublishingIsNeeded()
-                            .then(async () => await this.startBuilding()
-                                .then(async () => await this.pushToServer())))))
+            .then(async () => await this.ensureExists()
+                .then(async () => await this.getFileVersions()
+                    .then(async() => await this.determineIfPublishingIsNeeded()
+                        .then(async() => this.startBuilding()
+                            .then(async() => this.pushToServer())
+                        ).catch(c=> console.log(c))
+                    ).catch(c=> console.log(c))
+                ).catch(c=> console.log(c))
+            ).catch(c=> console.log(c))
     }
 }
 
-new Publisher().run().then(() => console.log('DONE!'))
+new Publisher().run().then(() => console.log('done'))
