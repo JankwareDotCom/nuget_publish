@@ -212,13 +212,13 @@ class Publisher {
         this.requiresPublishing.forEach(pf => {
             const packageName = this._getPackageName(pf)
             const packageVersion = this.projectVersions[pf];
-            core.info(`🏭 Starting build process for ${packageName} version ${packageVersion}`)
+            const versionSuffix = this._getBranchVersionSuffix()
+            const setVersionParam = versionSuffix !== '' ? ` -p:PackageVersion="${packageVersion}-${versionSuffix}"` : ''
+            core.info(`🏭 Starting build process for ${packageName} version ${packageVersion}${versionSuffix}`)
 
             try{
-                const versionSuffix = this._getBranchVersionSuffix()
-                const versionSuffixParam = versionSuffix !== '' ? ` --version-suffix "${versionSuffix}"` : ''
-                this._runCommandInProcess(`dotnet build -c Release ${pf}${versionSuffixParam}`)
-                this._runCommandInProcess(`dotnet pack${this.buildSymbolsString}${versionSuffixParam} --no-build -c Release ${pf} -o .`)
+                this._runCommandInProcess(`dotnet build -c Release ${pf}${setVersionParam}`)
+                this._runCommandInProcess(`dotnet pack${this.buildSymbolsString}${setVersionParam} --no-build -c Release ${pf} -o .`)
             } catch (err) {
                 this._printErrorAndBail(`error building package ${packageName} version ${packageVersion}: ${err.message}`)
             }
