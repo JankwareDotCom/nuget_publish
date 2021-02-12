@@ -86,8 +86,8 @@ class Publisher {
         const sha = core.getInput('commit-sha', { required: false}) || gh.context.sha
         const tagMessage = `Tagging commit #${sha} with version`
         core.info(tagMessage)
-        const tag = await gh.git.createTag({
-            ...context.repo,
+        await gh.git.createTag({
+            ...github.context.repo,
             tag: tagName,
             message: tagMessage,
             object: sha,
@@ -95,9 +95,9 @@ class Publisher {
         })
         core.info('applying tag to repo')
         await gh.createRef({
-            ...context.repo,
+            ...github.context.repo,
             ref: `refs/tags/${tagName}`,
-            sha: tag ? tag.data.sha : process.env.GITHUB_SHA
+            sha: sha
         })
     }
 
