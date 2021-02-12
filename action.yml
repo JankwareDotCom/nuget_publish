@@ -32,7 +32,7 @@ inputs:
     default: ''
     required: false
   REPO_TOKEN:
-    description: 'only required when tagging ${{ secrets.GITHUB_TOKEN }}'
+    description: 'only required when tagging secrets.GITHUB_TOKEN'
     default: ''
     required: false
 runs:
