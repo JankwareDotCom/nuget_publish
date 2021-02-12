@@ -1,6 +1,6 @@
 const
     core = require('@actions/core'),
-    { GitHub, context } = require('@actions/github'),
+    github = require('@actions/github'),
     fs = require("fs"),
     path = require("path"),
     https = require("https"),
@@ -32,12 +32,12 @@ class Publisher {
             this._printErrorAndBail("GITHUB TOKEN REQUIRED!")
         }
 
-        return new GitHub(this.githubToken)
+        return new github.getOctokit(this.githubToken)
     }
 
     async _getExistingTags() {
         const gh = this._getGitHub()
-        const {owner, repo} = context.repo
+        const {owner, repo} = github.context.repo
         let tags
 
         try
@@ -46,6 +46,7 @@ class Publisher {
                 owner, repo, per_page: 1000
             })
         }  catch (err) {
+            core.debug(err)
             tags = { data: []}
         }
 
