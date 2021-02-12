@@ -32,7 +32,7 @@ class Publisher {
             this._printErrorAndBail("GITHUB TOKEN REQUIRED!")
         }
 
-        return new github.getOctokit(this.githubToken)
+        return github.getOctokit(this.githubToken)
     }
 
     async _getExistingTags() {
