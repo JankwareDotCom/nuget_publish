@@ -19,7 +19,22 @@ inputs:
     description: Publish symbols too?
     required: false
     default: 'false'
-
+  TAG_COMMIT:
+    description: CSV of branch names for which to tag commits
+    required: false
+    default: ''
+  TAG_FORMAT:
+    description: Tag format when tagging commits.  e.g. 'v*', where * is the version number
+    required: false
+    default: 'v*'
+  BRANCH_VERSION_SUFFIXES:
+    description: Version suffix format for branches.  e.g. 'main=-pre' for prereleases
+    default: ''
+    required: false
+  GITHUB_TOKEN:
+    description: 'only required when tagging'
+    default: ''
+    required: false
 runs:
   using: 'node12'
   main: 'src/index.js'

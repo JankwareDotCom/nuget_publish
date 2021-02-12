@@ -1,4 +1,6 @@
 const
+    core = require('@actions/core'),
+    { GitHub, context } = require('@actions/github'),
     fs = require("fs"),
     path = require("path"),
     https = require("https"),
@@ -18,18 +20,94 @@ class Publisher {
         this.versionRegex = new RegExp(process.env.INPUT_VERSION_REGEX || '^.*<Version>(.*)<\\/Version>.*$','gim')
         this.projectVersions = {}
         this.requiresPublishing = []
+        this.tagCommits = (process.env.INPUT_TAG_COMMIT || '').split(',')
+        this.tagFormat = process.env.INPUT_TAG_FORMAT || 'v*'
+        this.branchVersionSuffixes = (process.env.INPUT_BRANCH_VERSION_SUFFIXES || '').split(',')
+        this.headBranch = process.env.GITHUB_HEAD_REF || process.env.GITHUB_REF && process.env.GITHUB_REF.split('/')[2]
+        this.githubToken = process.env.GITHUB_TOKEN || ''
+    }
+
+    _getGitHub() {
+        if (this.githubToken === undefined || this.githubToken === null || this.githubToken === '') {
+            this._printErrorAndBail("GITHUB TOKEN REQUIRED!")
+        }
+
+        return new GitHub(this.githubToken)
+    }
+
+    async _getExistingTags() {
+        const gh = new GitHub() //this._getGitHub()
+        const {owner, repo} = context.repo
+        let tags
+
+        try
+        {
+            tags = await gh.repos.listTags({
+                owner, repo, per_page: 1000
+            })
+        }  catch (err) {
+            tags = { data: []}
+        }
+
+        return tags.data;
+    }
+
+    _getBranchVersionSuffix() {
+        const settings = this.branchVersionSuffixes.find(f => f.startsWith(this.headBranch))
+
+        if (!settings || settings.length === 0) {
+            return ''
+        }
+
+        return settings[0].split('=', 2)[1]
+    }
+
+    async _tagCommit(){
+
+        if (!this.tagCommits.includes(this.headBranch)) {
+            return
+        }
+
+        const version = this.projectVersions[this.projectFiles[0]]
+        const versionSuffix = this._getBranchVersionSuffix()
+        const tagName = `${this.tagFormat.replaceAll('*', version)}${versionSuffix}`
+        const tags = await this._getExistingTags()
+
+        for (let tag of tags){
+            if (tag.name === tagName){
+                this._printErrorAndBail("Tag already exists")
+            }
+        }
+
+        const gh = this._getGitHub();
+        const sha = core.getInput('commit-sha', { required: false}) || gh.context.sha
+        const tagMessage = `Tagging commit #${sha} with version`
+        core.info(tagMessage)
+        const tag = await gh.git.createTag({
+            ...context.repo,
+            tag: tagName,
+            message: tagMessage,
+            object: sha,
+            type: 'commit'
+        })
+        core.info('applying tag to repo')
+        await gh.createRef({
+            ...context.repo,
+            ref: `refs/tags/${tagName}`,
+            sha: tag ? tag.data.sha : process.env.GITHUB_SHA
+        })
     }
 
     _printErrorAndBail(message){
-        console.log(`##[error]🛑 ${message}`)
-        throw new Error(message);
+        core.error(`##[error]🛑 ${message}`)
+        core.setFailed(new Error(message));
     }
 
     _checkIfProjectExists(projectFilePath){
         if (!fs.existsSync(projectFilePath)){
-            console.log(process.cwd())
+            core.info(process.cwd())
             fs.readdirSync(process.cwd()).forEach(file => {
-                console.log(`-> ${file}`);
+                core.info(`-> ${file}`);
             });
             this._printErrorAndBail(`Unable to find project '${projectFilePath}'`)
         }
@@ -40,7 +118,7 @@ class Publisher {
     }
 
     _runCommand(cmd, options) {
-        console.log(`executing command: [${cmd}]`)
+        core.info(`executing command: [${cmd}]`)
 
         const input = cmd.split(" ");
         const tool = input[0];
@@ -108,10 +186,9 @@ class Publisher {
                 const m = rgx.exec(data)
                 if (m !== null) {
                     this.projectVersions[pf] = m[1]
-                    console.log(`Found version ${m[1]} for '${pf}'`)
+                    core.info(`Found version ${m[1]} for '${pf}'`)
                 } else {
-                    console.log(data)
-                    console.log(m)
+                    core.info(data)
                     this._printErrorAndBail(`unable to determine version for '${pf}' using regex ${this.versionRegex.toString()}`)
                 }
             })
@@ -127,10 +204,12 @@ class Publisher {
         this.requiresPublishing.forEach(pf => {
             const packageName = this._getPackageName(pf)
             const packageVersion = this.projectVersions[pf];
-            console.log(`🏭 Starting build process for ${packageName} version ${packageVersion}`)
+            core.info(`🏭 Starting build process for ${packageName} version ${packageVersion}`)
 
             try{
-                this._runCommandInProcess(`dotnet build -c Release ${pf}`)
+                const versionSuffix = this._getBranchVersionSuffix()
+                const versionSuffixParam = versionSuffix !== '' ? ` --versionSuffix ${versionSuffix}` : ''
+                this._runCommandInProcess(`dotnet build -c Release ${pf}${versionSuffixParam}`)
                 this._runCommandInProcess(`dotnet pack${this.buildSymbolsString} --no-build -c Release ${pf} -o .`)
             } catch (err) {
                 this._printErrorAndBail(`error building package ${packageName} version ${packageVersion}: ${err.message}`)
@@ -143,12 +222,12 @@ class Publisher {
         const packages = fs.readdirSync(".")
             .filter(f => f.endsWith("nupkg"));
 
-        console.log(`🚀 Sending packages... (${packages.join(", ")})`)
+        core.info(`🚀 Sending packages... (${packages.join(", ")})`)
 
         const pushCommand = `dotnet nuget push *.nupkg -s ${this.nugetSource}/v3/index.json -k ${this.nugetKey} --skip-duplicate${this.publishSymbolsString}`
         const pushResults = this._runCommand(pushCommand, {encoding: "utf-8"}).stdout
 
-        console.log(pushResults)
+        core.info(pushResults)
 
         if(/error/.test(pushResults)) {
             this._printErrorAndBail(`${/error.*/.exec(pushResults)[0]}`)
@@ -170,16 +249,18 @@ class Publisher {
 
     async run() {
         await this.ensureFormat()
-            .then(async () => await this.ensureExists()
-                .then(async () => await this.getFileVersions()
-                    .then(async() => await this.determineIfPublishingIsNeeded()
-                        .then(async() => this.startBuilding()
-                            .then(async() => this.pushToServer())
-                        ).catch(c=> console.log(c))
-                    ).catch(c=> console.log(c))
-                ).catch(c=> console.log(c))
-            ).catch(c=> console.log(c))
+                .then(async () => await this.ensureExists()
+                    .then(async () => await this.getFileVersions()
+                        .then(async() => await this.determineIfPublishingIsNeeded()
+                            .then(async() => this._tagCommit()
+                                .then(async() => this.startBuilding()
+                                    .then(async() => this.pushToServer())
+                                ).catch(c=> core.info(c))
+                            ).catch(c=> core.info(c))
+                        ).catch(c=> core.info(c))
+                    ).catch(c=> core.info(c))
+                ).catch(c => core.info(c))
     }
 }
 
-new Publisher().run().then(() => console.log('done'))
+new Publisher().run().then(() => core.info('done'))
