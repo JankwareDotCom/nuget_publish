@@ -31,8 +31,8 @@ inputs:
     description: Version suffix format for branches.  e.g. 'main=-pre' for prereleases
     default: ''
     required: false
-  GITHUB_TOKEN:
-    description: 'only required when tagging'
+  REPO_TOKEN:
+    description: 'only required when tagging ${{ secrets.GITHUB_TOKEN }}'
     default: ''
     required: false
 runs:
