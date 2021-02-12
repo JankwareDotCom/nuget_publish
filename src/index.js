@@ -24,7 +24,7 @@ class Publisher {
         this.tagFormat = process.env.INPUT_TAG_FORMAT || 'v*'
         this.branchVersionSuffixes = (process.env.INPUT_BRANCH_VERSION_SUFFIXES || '').split(',')
         this.headBranch = process.env.GITHUB_HEAD_REF || process.env.GITHUB_REF && process.env.GITHUB_REF.split('/')[2]
-        this.githubToken = process.env.REPO_TOKEN || ''
+        this.githubToken = process.env.INPUT_REPO_TOKEN || ''
     }
 
     _getGitHub() {
