@@ -23,7 +23,7 @@ class Publisher {
         this.tagCommits = (process.env.INPUT_TAG_COMMIT || '').split(',')
         this.tagFormat = process.env.INPUT_TAG_FORMAT || 'v*'
         this.branchVersionSuffixes = (process.env.INPUT_BRANCH_VERSION_SUFFIXES || '').split(',')
-        this.headBranch = process.env.GITHUB_HEAD_REF || process.env.GITHUB_REF && process.env.GITHUB_REF.split('/')[2]
+        this.headBranch = process.env.GITHUB_REF.split('/').slice(2).join('/')
         this.githubToken = process.env.INPUT_REPO_TOKEN || ''
     }
 
@@ -54,7 +54,9 @@ class Publisher {
     }
 
     _getBranchVersionSuffix() {
+        core.info(`Checking branch suffix for ${this.headBranch}`)
         const settings = this.branchVersionSuffixes.find(f => f.startsWith(this.headBranch))
+        core.info(`Found branch version suffix settings: ${settings}`)
 
         if (!settings || settings.length === 0) {
             return ''
