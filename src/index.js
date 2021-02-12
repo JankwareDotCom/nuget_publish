@@ -71,8 +71,8 @@ class Publisher {
             return
         }
 
-        const version = this.projectVersions[this.projectFiles[0]]
         const versionSuffix = this._getBranchVersionSuffix()
+        const version = this.projectVersions[this.projectFiles[0]]
         const tagFormat = this.tagFormat || ''
         const tagFormatted = tagFormat.replace(/\*/g, version)
         const tagName = `${tagFormatted}${versionSuffix}`
@@ -86,7 +86,7 @@ class Publisher {
 
         const gh = this._getGitHub();
         const sha = core.getInput('commit-sha', { required: false}) || github.context.sha
-        const tagMessage = `Tagging commit #${sha} with version`
+        const tagMessage = `Tagging commit #${sha} with ${tagName}`
         core.info(tagMessage)
         await gh.git.createTag({
             ...github.context.repo,
@@ -249,7 +249,6 @@ class Publisher {
                 }
             })
         }
-
     }
 
     async run() {
