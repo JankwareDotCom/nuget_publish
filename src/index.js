@@ -25,6 +25,8 @@ class Publisher {
         this.branchVersionSuffixes = (process.env.INPUT_BRANCH_VERSION_SUFFIXES || '').split(',')
         this.headBranch = process.env.GITHUB_REF.split('/').slice(2).join('/')
         this.githubToken = process.env.INPUT_REPO_TOKEN || ''
+
+        core.info(`STARTING PROCESS WITH BRANCH ${this.headBranch}`)
     }
 
     _getGitHub() {
