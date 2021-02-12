@@ -36,7 +36,7 @@ class Publisher {
     }
 
     async _getExistingTags() {
-        const gh = new GitHub() //this._getGitHub()
+        const gh = this._getGitHub()
         const {owner, repo} = context.repo
         let tags
 
@@ -70,7 +70,8 @@ class Publisher {
 
         const version = this.projectVersions[this.projectFiles[0]]
         const versionSuffix = this._getBranchVersionSuffix()
-        const tagName = `${this.tagFormat.replaceAll('*', version)}${versionSuffix}`
+        const tagFormat = this.tagFormat || ''
+        const tagName = `${tagFormat.replaceAll('*', version)}${versionSuffix}`
         const tags = await this._getExistingTags()
 
         for (let tag of tags){
