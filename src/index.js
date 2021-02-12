@@ -71,7 +71,8 @@ class Publisher {
         const version = this.projectVersions[this.projectFiles[0]]
         const versionSuffix = this._getBranchVersionSuffix()
         const tagFormat = this.tagFormat || ''
-        const tagName = `${tagFormat.replaceAll('*', version)}${versionSuffix}`
+        const tagFormatted = tagFormat.replaceAll('*', version)
+        const tagName = `${tagFormatted}${versionSuffix}`
         const tags = await this._getExistingTags()
 
         for (let tag of tags){
