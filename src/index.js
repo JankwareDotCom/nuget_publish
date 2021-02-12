@@ -83,7 +83,7 @@ class Publisher {
         }
 
         const gh = this._getGitHub();
-        const sha = core.getInput('commit-sha', { required: false}) || gh.context.sha
+        const sha = core.getInput('commit-sha', { required: false}) || github.context.sha
         const tagMessage = `Tagging commit #${sha} with version`
         core.info(tagMessage)
         await gh.git.createTag({
