@@ -94,7 +94,7 @@ class Publisher {
             type: 'commit'
         })
         core.info('applying tag to repo')
-        await gh.createRef({
+        await gh.git.createRef({
             ...github.context.repo,
             ref: `refs/tags/${tagName}`,
             sha: sha
