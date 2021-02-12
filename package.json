@@ -1,6 +1,6 @@
 {
   "name": "nuget_publisher",
-  "version": "0.2.11",
+  "version": "0.2.12",
   "dependencies": {
     "@actions/core": "^1.2.6",
     "@actions/github": "^4.0.0"},
