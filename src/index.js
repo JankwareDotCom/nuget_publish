@@ -218,7 +218,7 @@ class Publisher {
                 const versionSuffix = this._getBranchVersionSuffix()
                 const versionSuffixParam = versionSuffix !== '' ? ` --version-suffix "${versionSuffix}"` : ''
                 this._runCommandInProcess(`dotnet build -c Release ${pf}${versionSuffixParam}`)
-                this._runCommandInProcess(`dotnet pack${this.buildSymbolsString} --no-build -c Release ${pf} -o .`)
+                this._runCommandInProcess(`dotnet pack${this.buildSymbolsString}${versionSuffixParam} --no-build -c Release ${pf} -o .`)
             } catch (err) {
                 this._printErrorAndBail(`error building package ${packageName} version ${packageVersion}: ${err.message}`)
             }
