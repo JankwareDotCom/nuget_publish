@@ -57,14 +57,15 @@ class Publisher {
 
     _getBranchVersionSuffix() {
         core.info(`Checking branch suffix for ${this.headBranch}`)
-        const settings = this.branchVersionSuffixes.find(f => f.startsWith(this.headBranch))
-        core.info(`Found branch version suffix settings: ${settings}`)
+        const setting = this.branchVersionSuffixes.find(f => f.startsWith(this.headBranch))
 
-        if (!settings || settings.length === 0) {
+        if (!setting || setting.length === 0) {
             return ''
         }
 
-        return settings[0].split('=', 2)[1]
+        const result = setting.split('=', 2)[1]
+        core.info(`Found branch version suffix settings: ${result}`)
+        return result
     }
 
     async _tagCommit(){
