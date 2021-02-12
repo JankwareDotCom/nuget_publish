@@ -1,5 +1,5 @@
-name: publish nuget package(s) (csharp)
-description: publish nuget package(s) (csharp)
+name: publish nuget package(s)
+description: publish nuget package(s)
 
 inputs:
   PROJECT_FILE_PATHS:
