@@ -4,6 +4,7 @@ const
     fs = require("fs"),
     path = require("path"),
     https = require("https"),
+    { DateTime } = require("luxon"),
     spawnSync = require("child_process").spawnSync
 
 class Publisher {
@@ -25,7 +26,7 @@ class Publisher {
         this.branchVersionSuffixes = (process.env.INPUT_BRANCH_VERSION_SUFFIXES || '').split(',')
         this.headBranch = process.env.GITHUB_REF.split('/').slice(2).join('/')
         this.githubToken = process.env.INPUT_REPO_TOKEN || ''
-
+        this.now = DateTime.utc()
         core.info(`STARTING PROCESS WITH BRANCH ${this.headBranch}`)
     }
 
@@ -63,12 +64,37 @@ class Publisher {
             return ''
         }
 
-        const result = setting.split('=', 2)[1]
+        let result = setting.split('=', 2)[1]
+
+        // handle dates
+        result = this._performDateInfill(result)
+        result = this._performHashReplacement(result)
+
         core.info(`Found branch version suffix settings: ${result}`)
         return result
     }
 
-    async _tagCommit(){
+    _performHashReplacement(versionSuffix) {
+        const sha = core.getInput('commit-sha', { required: false}) || github.context.sha
+        const shortSha = sha.substring(0,7)
+        return versionSuffix.replace(/\*/g, shortSha)
+    }
+
+    _performDateInfill(versionSuffix) {
+        const match = versionSuffix.match(/{([^}]+)}/)
+
+        if (match === null) {
+            return versionSuffix
+        }
+
+        const replaceThis = match[0].toString()
+        const formatString = match[1].toString()
+        const dateFormatted = this.now.toFormat(formatString)
+
+        return versionSuffix.replace(replaceThis, dateFormatted)
+    }
+
+    async tagCommit(){
 
         if (!this.tagCommits.includes(this.headBranch)) {
             return
@@ -259,7 +285,7 @@ class Publisher {
                 .then(async () => await this.ensureExists()
                     .then(async () => await this.getFileVersions()
                         .then(async() => await this.determineIfPublishingIsNeeded()
-                            .then(async() => this._tagCommit()
+                            .then(async() => this.tagCommit()
                                 .then(async() => this.startBuilding()
                                     .then(async() => this.pushToServer())
                                 ).catch(c=> core.info(c))

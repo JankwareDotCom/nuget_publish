@@ -1,9 +1,10 @@
 {
   "name": "nuget_publisher",
-  "version": "0.2.20",
+  "version": "0.3.0",
   "dependencies": {
     "@actions/core": "^1.2.6",
-    "@actions/github": "^4.0.0"},
-  "devDependencies": {
-  }
+    "@actions/github": "^4.0.0",
+    "luxon": "^1.26.0"
+  },
+  "devDependencies": {}
 }
