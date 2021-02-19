@@ -2,7 +2,7 @@ name: nuget_publish
 on:
   pull_request:
     branches: ['main','develop']
-    types: [merged]
+    types: [closed]
 
 jobs:
   publish:
