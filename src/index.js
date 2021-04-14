@@ -24,10 +24,10 @@ class Publisher {
         this.tagCommits = (process.env.INPUT_TAG_COMMIT || '').split(',')
         this.tagFormat = process.env.INPUT_TAG_FORMAT || 'v*'
         this.branchVersionSuffixes = (process.env.INPUT_BRANCH_VERSION_SUFFIXES || '').split(',')
-        this.headBranch = process.env.GITHUB_REF.split('/').slice(2).join('/')
+        this.branchName = process.env.GITHUB_BASE_REF || process.env.GITHUB_REF
         this.githubToken = process.env.INPUT_REPO_TOKEN || ''
         this.now = DateTime.utc()
-        core.info(`STARTING PROCESS WITH BRANCH ${this.headBranch}`)
+        core.info(`STARTING PROCESS WITH BRANCH ${this.branchName}`)
     }
 
     _getGitHub() {
@@ -57,8 +57,8 @@ class Publisher {
     }
 
     _getBranchVersionSuffix() {
-        core.info(`Checking branch suffix for ${this.headBranch}`)
-        const setting = this.branchVersionSuffixes.find(f => f.startsWith(this.headBranch))
+        core.info(`Checking branch suffix for ${this.branchName}`)
+        const setting = this.branchVersionSuffixes.find(f => f.startsWith(this.branchName))
 
         if (!setting || setting.length === 0) {
             return ''
@@ -96,7 +96,7 @@ class Publisher {
 
     async tagCommit(){
 
-        if (!this.tagCommits.includes(this.headBranch)) {
+        if (!this.tagCommits.includes(this.branchName)) {
             return
         }
 
