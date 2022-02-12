@@ -4,6 +4,7 @@ const
     fs = require("fs"),
     path = require("path"),
     https = require("https"),
+    { DateTime } = require("luxon"),
     spawnSync = require("child_process").spawnSync
 
 class Publisher {
@@ -23,10 +24,10 @@ class Publisher {
         this.tagCommits = (process.env.INPUT_TAG_COMMIT || '').split(',')
         this.tagFormat = process.env.INPUT_TAG_FORMAT || 'v*'
         this.branchVersionSuffixes = (process.env.INPUT_BRANCH_VERSION_SUFFIXES || '').split(',')
-        this.headBranch = process.env.GITHUB_REF.split('/').slice(2).join('/')
+        this.branchName = process.env.GITHUB_BASE_REF || process.env.GITHUB_REF
         this.githubToken = process.env.INPUT_REPO_TOKEN || ''
-
-        core.info(`STARTING PROCESS WITH BRANCH ${this.headBranch}`)
+        this.now = DateTime.utc()
+        core.info(`STARTING PROCESS WITH BRANCH ${this.branchName}`)
     }
 
     _getGitHub() {
@@ -56,21 +57,46 @@ class Publisher {
     }
 
     _getBranchVersionSuffix() {
-        core.info(`Checking branch suffix for ${this.headBranch}`)
-        const setting = this.branchVersionSuffixes.find(f => f.startsWith(this.headBranch))
+        core.info(`Checking branch suffix for ${this.branchName}`)
+        const setting = this.branchVersionSuffixes.find(f => f.startsWith(this.branchName))
 
         if (!setting || setting.length === 0) {
             return ''
         }
 
-        const result = setting.split('=', 2)[1]
+        let result = setting.split('=', 2)[1]
+
+        // handle dates
+        result = this._performDateInfill(result)
+        result = this._performHashReplacement(result)
+
         core.info(`Found branch version suffix settings: ${result}`)
         return result
     }
 
-    async _tagCommit(){
+    _performHashReplacement(versionSuffix) {
+        const sha = core.getInput('commit-sha', { required: false}) || github.context.sha
+        const shortSha = sha.substring(0,7)
+        return versionSuffix.replace(/\*/g, shortSha)
+    }
 
-        if (!this.tagCommits.includes(this.headBranch)) {
+    _performDateInfill(versionSuffix) {
+        const match = versionSuffix.match(/{([^}]+)}/)
+
+        if (match === null) {
+            return versionSuffix
+        }
+
+        const replaceThis = match[0].toString()
+        const formatString = match[1].toString()
+        const dateFormatted = this.now.toFormat(formatString)
+
+        return versionSuffix.replace(replaceThis, dateFormatted)
+    }
+
+    async tagCommit(){
+
+        if (!this.tagCommits.includes(this.branchName)) {
             return
         }
 
@@ -213,12 +239,11 @@ class Publisher {
             const packageName = this._getPackageName(pf)
             const packageVersion = this.projectVersions[pf];
             const versionSuffix = this._getBranchVersionSuffix()
-            const setVersionParam = versionSuffix !== '' ? ` -p:PackageVersion="${packageVersion}-${versionSuffix}"` : ''
+            const setVersionParam = versionSuffix !== '' ? ` -p:PackageVersion="${packageVersion}-${versionSuffix}"` : ` -p:PackageVersion="${packageVersion}"`
             core.info(`🏭 Starting build process for ${packageName} version ${packageVersion}${versionSuffix}`)
 
             try{
-                this._runCommandInProcess(`dotnet build -c Release ${pf}${setVersionParam}`)
-                this._runCommandInProcess(`dotnet pack${this.buildSymbolsString}${setVersionParam} --no-build -c Release ${pf} -o .`)
+                this._runCommandInProcess(`dotnet pack${this.buildSymbolsString}${setVersionParam} -c Release ${pf} -o .`)
             } catch (err) {
                 this._printErrorAndBail(`error building package ${packageName} version ${packageVersion}: ${err.message}`)
             }
@@ -259,7 +284,7 @@ class Publisher {
                 .then(async () => await this.ensureExists()
                     .then(async () => await this.getFileVersions()
                         .then(async() => await this.determineIfPublishingIsNeeded()
-                            .then(async() => this._tagCommit()
+                            .then(async() => this.tagCommit()
                                 .then(async() => this.startBuilding()
                                     .then(async() => this.pushToServer())
                                 ).catch(c=> core.info(c))

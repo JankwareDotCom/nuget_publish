@@ -1,4 +1,4 @@
-# csharp_nuget_publish
+# nuget_publish
 
 Publish Nuget Packages
 

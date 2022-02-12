@@ -1,5 +1,5 @@
-name: publish nuget package(s) (csharp)
-description: publish nuget package(s) (csharp)
+name: publish nuget package(s)
+description: publish nuget package(s)
 
 inputs:
   PROJECT_FILE_PATHS:
@@ -28,7 +28,9 @@ inputs:
     required: false
     default: 'v*'
   BRANCH_VERSION_SUFFIXES:
-    description: Version suffix format for branches.  e.g. 'main=-pre' for prereleases
+    description: Version suffix format for branches.  e.g. 'main=pre' for prereleases;
+      you can use * to include the 7-char shortened sha;
+      you can use date formats supported by luxon (https://moment.github.io/luxon/docs/manual/formatting.html#table-of-tokens)
     default: ''
     required: false
   REPO_TOKEN:
